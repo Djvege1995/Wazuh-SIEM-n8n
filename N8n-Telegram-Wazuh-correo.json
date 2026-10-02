@@ -1,0 +1,532 @@
+{
+  "name": "Wazuh - Alertas SIEM en Tiempo Real (Telegram & Email)",
+  "nodes": [
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "=⚠️ *Acceso fuera de horario*\n*Usuario:* {{ $json.body.data.win.eventdata.targetUserName }}\n*Dominio:* {{ $json.body.data.win.eventdata.targetDomainName }}\n*Servidor:* {{ $json.body.agent.name }}\n*IP Origen:* {{ $json.body.data.win.eventdata.ipAddress }}\n*Hora:* {{ $json.formattedDate }}:00",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        752,
+        -48
+      ],
+      "id": "1b7b099d-e2fb-4983-b4e7-759b1f4af7a1",
+      "name": "Send a text message",
+      "webhookId": "00000000-0000-0000-0000-000000000002",
+      "credentials": {
+        "telegramApi": {
+          "id": "YOUR_TELEGRAM_CREDENTIAL_ID",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "wazuh-alerts",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -160,
+        -272
+      ],
+      "id": "19c64549-0f5d-4d8b-9d6e-1249bafe8c10",
+      "name": "Webhook",
+      "webhookId": "00000000-0000-0000-0000-000000000003"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.rule.id }}",
+                    "rightValue": "67028|4720|4732|60147",
+                    "operator": {
+                      "type": "string",
+                      "operation": "regex"
+                    },
+                    "id": "3f2775ce-f1f6-412b-b10e-5b4068a4544a"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Privilegios"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "b3b50543-4ed8-4e01-bff5-4155cbe17d58",
+                    "leftValue": "={{ $json.body.rule.id }}",
+                    "rightValue": "=60106|5715",
+                    "operator": {
+                      "type": "string",
+                      "operation": "regex"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Logons"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        16,
+        -272
+      ],
+      "id": "80dcce67-b828-4a1b-944c-74c1353e092d",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "operation": "formatDate",
+        "date": "={{ $json.body.timestamp }}",
+        "format": "custom",
+        "customFormat": "=HH",
+        "outputFieldName": "hora_evento",
+        "options": {
+          "includeInputFields": true,
+          "timezone": true
+        }
+      },
+      "type": "n8n-nodes-base.dateTime",
+      "typeVersion": 2,
+      "position": [
+        336,
+        -80
+      ],
+      "id": "fcdda85c-dffe-43d1-811b-4f8a5a0eacd4",
+      "name": "Date & Time"
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "=🚨 *Alerta de Seguridad: Privilegios/Usuarios*\n*Servidor:* {{ $json.body.agent.name }}\n*Regla:* {{ $json.body.rule.description }}\n*Usuario afectado:* {{ $json.body.data.win.eventdata.targetUserName }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        432,
+        -304
+      ],
+      "id": "a17ffd74-e8a6-49ab-beef-208195856d2f",
+      "name": "Send a text message1",
+      "webhookId": "00000000-0000-0000-0000-000000000004",
+      "credentials": {
+        "telegramApi": {
+          "id": "YOUR_TELEGRAM_CREDENTIAL_ID",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "d0011679-6e7c-4190-9fa8-39806de2d7a2",
+              "leftValue": "={{ $json.body.data.win.eventdata?.subjectUserName }}",
+              "rightValue": "service_account_example",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        224,
+        -288
+      ],
+      "id": "d44b21dc-dbed-411c-be00-a6c9ea33f6de",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "d0011679-6e7c-4190-9fa8-39806de2d7a2",
+              "leftValue": "={{ $json.body.data.win.eventdata?.subjectUserName }}",
+              "rightValue": "service_account_example",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        592,
+        112
+      ],
+      "id": "fd16c6a2-5f61-4035-b0dd-914e26336e12",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "3c933264-ee34-4c86-bf88-4933d9ecb828",
+              "leftValue": "={{ $json.hora_evento }}",
+              "rightValue": 8,
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            },
+            {
+              "id": "50eba9d8-5b25-4df6-bcb1-05b0c58e53d1",
+              "leftValue": "={{ $json.hora_evento }}",
+              "rightValue": 18,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        352,
+        128
+      ],
+      "id": "555f5728-546b-4a2b-ad4b-78ba279a37ac",
+      "name": "If2"
+    },
+    {
+      "parameters": {
+        "fromEmail": "alertas-siem@empresa-ejemplo.com",
+        "toEmail": "soc-analista@empresa-ejemplo.com",
+        "subject": "🚨 Alerta Wazuh - Modificación de Privilegios",
+        "html": "=🚨 *Alerta de Seguridad: Privilegios/Usuarios*\n*Servidor:* {{ $json.body.agent.name }}\n*Regla:* {{ $json.body.rule.description }}\n*Usuario afectado:* {{ $json.body.data.win.eventdata.targetUserName }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        432,
+        -448
+      ],
+      "id": "ea6fbbdd-cf2e-45ad-bfc1-2ca60f23f073",
+      "name": "Send an Email",
+      "webhookId": "00000000-0000-0000-0000-000000000005",
+      "credentials": {
+        "smtp": {
+          "id": "YOUR_SMTP_CREDENTIAL_ID",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "alertas-siem@empresa-ejemplo.com",
+        "toEmail": "soc-analista@empresa-ejemplo.com",
+        "subject": "🚨 Alerta Wazuh - Nuevo Logon",
+        "html": "=⚠️ *Acceso fuera de horario*\n*Usuario:* {{ $json.body.data.win.eventdata.targetUserName }}\n*Dominio:* {{ $json.body.data.win.eventdata.targetDomainName }}\n*Servidor:* {{ $json.body.agent.name }}\n*IP Origen:* {{ $json.body.data.win.eventdata.ipAddress }}\n*Hora:* {{ $json.formattedDate }}:00",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        880,
+        80
+      ],
+      "id": "cf72fa22-eda0-4fa5-9346-81c610da0d14",
+      "name": "Send an Email1",
+      "webhookId": "00000000-0000-0000-0000-000000000006",
+      "credentials": {
+        "smtp": {
+          "id": "YOUR_SMTP_CREDENTIAL_ID",
+          "name": "SMTP account"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "10.0.0.10:5678",
+            "user-agent": "curl/7.76.1",
+            "accept": "*/*",
+            "content-type": "application/json",
+            "content-length": "2016"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "timestamp": "2026-09-25T15:57:27.728-0500",
+            "rule": {
+              "level": 5,
+              "description": "Security Enabled Local Group Changed",
+              "id": "60147",
+              "mitre": {
+                "id": [
+                  "T1484"
+                ],
+                "tactic": [
+                  "Defense Evasion",
+                  "Privilege Escalation"
+                ],
+                "technique": [
+                  "Domain Policy Modification"
+                ]
+              },
+              "firedtimes": 1,
+              "mail": false,
+              "groups": [
+                "windows",
+                "windows_security",
+                "group_changed",
+                "win_group_changed"
+              ],
+              "pci_dss": [
+                "8.1.2",
+                "10.2.5"
+              ],
+              "gpg13": [
+                "7.10"
+              ],
+              "gdpr": [
+                "IV_35.7.d",
+                "IV_32.2"
+              ],
+              "hipaa": [
+                "164.312.a.2.I",
+                "164.312.a.2.II",
+                "164.312.b"
+              ],
+              "nist_800_53": [
+                "AC.2",
+                "IA.4",
+                "AU.14",
+                "AC.7"
+              ],
+              "tsc": [
+                "CC6.8",
+                "CC7.2",
+                "CC7.3"
+              ]
+            },
+            "agent": {
+              "id": "004",
+              "name": "Servidor-AD-Demo",
+              "ip": "10.0.0.5"
+            },
+            "manager": {
+              "name": "wazuh-manager.local"
+            },
+            "id": "1790369847.00000000",
+            "decoder": {
+              "name": "windows_eventchannel"
+            },
+            "data": {
+              "win": {
+                "system": {
+                  "providerName": "Microsoft-Windows-Security-Auditing",
+                  "providerGuid": "{54849625-5478-4994-a5ba-3e3b0328c30d}",
+                  "eventID": "4735",
+                  "version": "0",
+                  "level": "0",
+                  "task": "13826",
+                  "opcode": "0",
+                  "keywords": "0x8020000000000000",
+                  "systemTime": "2026-09-25T20:57:26.7134300Z",
+                  "eventRecordID": "100000",
+                  "processID": "964",
+                  "threadID": "2952",
+                  "channel": "Security",
+                  "computer": "SRV-AD01.empresa-ejemplo.local",
+                  "severityValue": "AUDIT_SUCCESS",
+                  "message": "\"Se cambió un grupo local con seguridad habilitada.\r\n\r\nSujeto:\r\n\tId. de seguridad:\t\tS-1-5-21-000000000-0000000000-0000000000-1000\r\n\tNombre de cuenta:\t\tadmin_user\r\n\tDominio de cuenta:\t\tEMPRESA-DEMO\r\n\tId. de inicio de sesión:\t\t0x0000000\r\n\r\nGrupo:\r\n\tId. de seguridad:\t\tS-1-5-32-544\r\n\tNombre de grupo:\t\tAdministrators\r\n\tDominio de grupo:\t\tBuiltin\""
+                },
+                "eventdata": {
+                  "targetUserName": "Administrators",
+                  "targetDomainName": "Builtin",
+                  "targetSid": "S-1-5-32-544",
+                  "subjectUserSid": "S-1-5-21-000000000-0000000000-0000000000-1000",
+                  "subjectUserName": "admin_user",
+                  "subjectDomainName": "EMPRESA-DEMO",
+                  "subjectLogonId": "0x0000000"
+                }
+              }
+            },
+            "location": "EventChannel"
+          },
+          "webhookUrl": "http://localhost:5678/webhook-test/wazuh-alerts",
+          "executionMode": "test"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Date & Time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Date & Time": {
+      "main": [
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send an Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send an Email1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If2": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "timezone": "America/Guayaquil",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "00000000-0000-0000-0000-000000000000",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "YOUR_N8N_INSTANCE_ID"
+  },
+  "nodeGroups": [],
+  "id": "WORKFLOW_ID_1",
+  "tags": []
+}

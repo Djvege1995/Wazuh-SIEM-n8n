@@ -1,0 +1,114 @@
+{
+  "name": "Wazuh - Reporte Diario Threat Hunting",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 17,
+              "triggerAtMinute": 2
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "f592a42a-6d7f-44fc-aae5-86cbdbcf96b0",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "command": "curl -s -u admin:YOUR_WAZUH_INDEXER_PASSWORD -k -X GET \"https://127.0.0.1:9200/wazuh-states-vulnerabilities-*/_search?q=agent.id:003\""
+      },
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        128,
+        0
+      ],
+      "id": "e16a68b3-1c07-44de-ba6e-b5513ba92e6b",
+      "name": "Execute a command",
+      "credentials": {
+        "sshPassword": {
+          "id": "YOUR_SSH_CREDENTIAL_ID",
+          "name": "SSH Password account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "alertas-siem@empresa-ejemplo.com",
+        "toEmail": "soc-analista@empresa-ejemplo.com",
+        "subject": "📊 Reporte Diario Threat Hunting - Servidor AD",
+        "html": "=<div style=\"font-family: Arial, sans-serif; color: #333;\">\n  <h2 style=\"color: #0056b3;\">Reporte Diario de Vulnerabilidades</h2>\n  <p>Se ha completado el escaneo automático de Threat Hunting en el <strong>Agente 003 (Servidor-AD)</strong>.</p>\n\n  <table style=\"border-collapse: collapse; width: 100%; max-width: 600px; margin-top: 20px;\">\n    <tr style=\"background-color: #f4f4f4;\">\n      <th style=\"border: 1px solid #ddd; padding: 12px; text-align: left;\">Métrica de Seguridad</th>\n      <th style=\"border: 1px solid #ddd; padding: 12px; text-align: left;\">Resultado</th>\n    </tr>\n    <tr>\n      <td style=\"border: 1px solid #ddd; padding: 12px;\">Total de Vulnerabilidades Detectadas (CVE)</td>\n      <td style=\"border: 1px solid #ddd; padding: 12px; color: #d9534f; font-weight: bold; font-size: 18px;\">\n        {{ JSON.parse($json.stdout).hits.total.value }}\n      </td>\n    </tr>\n  </table>\n  <br>\n  <p style=\"font-size: 12px; color: #777;\">* Este es un reporte generado automáticamente. Por favor, ingrese al Wazuh Dashboard (Módulo Vulnerability Detector) para ver el detalle de los CVEs y planificar la remediación.</p>\n</div>",
+        "options": {
+          "ccEmail": "soporte-ti@empresa-ejemplo.com",
+          "bccEmail": "gerencia-ti@empresa-ejemplo.com"
+        }
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        256,
+        0
+      ],
+      "id": "31c00d4f-d1f4-4627-b23d-4f0e36396b92",
+      "name": "Send an Email",
+      "webhookId": "00000000-0000-0000-0000-000000000001",
+      "credentials": {
+        "smtp": {
+          "id": "YOUR_SMTP_CREDENTIAL_ID",
+          "name": "SMTP account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Execute a command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a command": {
+      "main": [
+        [
+          {
+            "node": "Send an Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send an Email": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "00000000-0000-0000-0000-000000000000",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "YOUR_N8N_INSTANCE_ID"
+  },
+  "nodeGroups": [],
+  "id": "WORKFLOW_ID_2",
+  "tags": []
+}
